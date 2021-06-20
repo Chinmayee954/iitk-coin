@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 	  "strconv"
+	  "context"
+	  "log"
 
 	"github.com/dgrijalva/jwt-go"
      _ "github.com/mattn/go-sqlite3"
@@ -35,6 +37,21 @@ type User struct{
     Username string `json:"rollno"`
     Password string `json:"password"`
 }
+
+type Coins struct{
+    RollNo string `json:"rollno"`
+    InsertedCoins string `json:"coins"`
+}
+
+type Transaction struct{
+	RollNo1 string `json:"rollno1"`
+	RollNo2 string `json:"rollno2"`
+	Coins string `json:"coins"`
+ }
+
+ type RollNo struct {
+	 RequestedRollNo string `json:"rollno"`
+ }
 
 func getHash(pwd []byte) string {        
     hash, err := bcrypt.GenerateFromPassword(pwd, bcrypt.MinCost)          
@@ -293,3 +310,205 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 		})
 
 }
+
+
+func AwardCoins(response http.ResponseWriter, request *http.Request)  {
+	response.Header().Set("Content-Type","application/json")
+	  var coins Coins
+	  json.NewDecoder(request.Body).Decode(&coins)
+      
+	   database, _ := sql.Open("sqlite3", "./data.db")
+
+	      intialrow, _ := database.Query("SELECT id, rollno, coins FROM people")
+
+
+	   fmt.Println(coins.RollNo, coins.InsertedCoins)
+	  
+
+	     var initialid int
+    var initialrollno string
+    var initialcoins string
+	 var flag int
+
+	   for intialrow.Next() {
+          intialrow.Scan(&initialid, &initialrollno, &initialcoins)
+		 if coins.RollNo == initialrollno {
+			 
+			 flag = 1
+		    
+		//   return
+		 }
+		}
+
+		if flag == 1 {
+			fmt.Println("found")
+               stmtupdate, _ := database.Prepare("UPDATE people set coins=? WHERE rollno = (?)")
+          stmtupdate.Exec(coins.InsertedCoins, coins.RollNo)
+		} else {
+			fmt.Println("notfound")
+                stmtinsert, _ := database.Prepare("INSERT INTO people (rollno, coins) VALUES (?, ?)")
+	             stmtinsert.Exec(coins.RollNo, coins.InsertedCoins)
+	
+		} 
+
+	  
+       
+
+		
+
+	     updatedrow, _ := database.Query("SELECT id, rollno, coins FROM people")
+	
+	var id int
+    var rollno string
+    var updatedcoins string
+
+	   for updatedrow.Next() {
+        
+	 	 fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + updatedcoins)
+
+	 	}
+
+	}
+
+	func DoTransaction(response http.ResponseWriter, request *http.Request){
+		response.Header().Set("Content-Type","application/json")
+	  var transaction Transaction
+	  json.NewDecoder(request.Body).Decode(&transaction)
+	   database, err := sql.Open("sqlite3", "./data.db")	
+	   
+	   if err != nil {
+		log.Fatal(err)
+	    }
+
+	      coins, _ := strconv.Atoi(transaction.Coins)
+
+
+		  ctx := context.Background()
+	    tx, err := database.BeginTx(ctx, nil)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+
+	//    var rollno1 string  = transaction.RollNo1
+	//    var rollno2 string  = transaction.RollNo2
+
+       var rollno1 string
+	   var rollno2 string
+	   var id1 string
+	   var id2 string
+	   var coins1 string
+	   var coins2 string
+
+	    var tcoins1 int
+	    var tcoins2 int
+
+	     row1, _ := tx.Query("SELECT id, rollno, coins FROM people")
+
+		  for row1.Next() {
+           err =  row1.Scan(&id1, &rollno1, &coins1) 
+		    if err != nil {
+		    tx.Rollback()
+		    return
+     	    }
+		 if transaction.RollNo1 == rollno1 {
+			 fmt.Println(rollno1)
+			   tcoins1,_ = strconv.Atoi(coins1)
+			
+		 }
+    }
+
+		 row2, _ := tx.Query("SELECT id, rollno, coins FROM people")
+
+		   for row2.Next() {
+        err =  row2.Scan(&id2, &rollno2, &coins2) 
+
+		 if err != nil {
+		    tx.Rollback()
+		    return
+     	    }
+		 if transaction.RollNo2 == rollno2 {
+			 fmt. Println(rollno1)
+			   tcoins2,_ = strconv.Atoi(coins2)
+			
+		 }
+    }
+
+	        // fmt.Println(coins1)
+			// fmt.Println(coins2)
+		
+		     tcoins1 = tcoins1-coins
+		     tcoins2 = tcoins2+coins
+
+			// fmt.Println(tcoins1)
+			// fmt.Println(tcoins2)
+
+			fmt.Println(transaction.RollNo1)
+
+			if tcoins1 < 0 {
+				 response.Write([]byte(fmt.Sprintf("%s does not have enough coins", transaction.RollNo1 )))
+				  tx.Rollback()
+				return
+			} else {
+			// stmtupdate1, _ := database.Prepare("UPDATE people set coins=? WHERE rollno=?")
+			_,err = tx.ExecContext(ctx, "UPDATE people set coins=? WHERE rollno=?", strconv.Itoa(tcoins1), transaction.RollNo1)
+			    if err != nil {
+		         tx.Rollback()
+		         return
+	                }
+            // stmtupdate1.Exec(strconv.Itoa(tcoins1), transaction.RollNo1)
+
+			// stmtupdate2, _ := database.Prepare("update people set coins=? where rollno=?")
+			_,err = tx.ExecContext(ctx, "UPDATE people set coins=? WHERE rollno=?", strconv.Itoa(tcoins2), transaction.RollNo2)
+			      if err != nil {
+		         tx.Rollback()
+		         return
+	                }
+            // stmtupdate2.Exec(strconv.Itoa(tcoins2), transaction.RollNo2)
+			}
+
+
+		updatedrow, _ := database.Query("SELECT id, rollno, coins FROM people")
+	
+	var id int
+    var rollno string
+    var updatedcoins string
+
+	   for updatedrow.Next() {
+         updatedrow.Scan(&id, &rollno, &updatedcoins)
+	 	 fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + updatedcoins)
+
+	 	}
+
+		 err = tx.Commit()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+		 response.Write([]byte(fmt.Sprintf("transaction success")))
+		//  response.Write([]byte(fmt.Sprintf("%s has %s coins", transaction.RollNo2, strconv.Itoa(tcoins2))))
+
+	}
+
+		func Showcoins(response http.ResponseWriter, request *http.Request){
+                  response.Header().Set("Content-Type","application/json")
+	  var rollno RollNo
+	  json.NewDecoder(request.Body).Decode(&rollno)
+	   database, _ := sql.Open("sqlite3", "./data.db")
+          
+         row, _ := database.Query("SELECT id, rollno, coins FROM people")
+
+	var requestedrollno string
+    var coins string
+    var id int
+
+	   for row.Next() {
+          row.Scan(&id, &requestedrollno, &coins)
+		 if rollno.RequestedRollNo == requestedrollno {
+			 response.Write([]byte(fmt.Sprintf("coins : %s", coins)))
+			 return
+		 }
+		}
+
+	}

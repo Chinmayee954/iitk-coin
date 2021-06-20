@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"database/sql"
 	 _ "github.com/mattn/go-sqlite3"
-	 "fmt"
-	 "strconv"
+	//  "fmt"
+	//  "strconv"
 )
 
 func main() {
@@ -21,16 +21,17 @@ statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS SignUpRoll (id INTE
     statement1, _ := database1.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, rollno TEXT, coins TEXT)")
     statement1.Exec()
 
-	 statement1, _ = database1.Prepare("INSERT INTO people (rollno, coins) VALUES (?, ?)")
-    statement1.Exec("190232", "20")
-    rows, _ := database1.Query("SELECT id, rollno, coins FROM people")
-    var id int
-    var rollno string
-    var coins string
-    for rows.Next() {
-        rows.Scan(&id, &rollno, &coins)
-        fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + coins)
-	}
+	//   statement1, _ = database1.Prepare("DELETE FROM people WHERE id=?")
+	// //   delete from userinfo where uid=?
+    //  statement1.Exec(3)
+    // rows, _ := database1.Query("SELECT id, rollno, coins FROM people")
+    // var id int
+    // var rollno string
+    // var coins string
+    // for rows.Next() {
+    //     rows.Scan(&id, &rollno, &coins)
+    //     fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + coins)
+	// }
  
 
 
@@ -39,6 +40,9 @@ statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS SignUpRoll (id INTE
 	http.HandleFunc("/secretpage", Home)
 	http.HandleFunc("/refresh", Refresh)
 	http.HandleFunc("/signup", SignUp)
+	http.HandleFunc("/coins", AwardCoins)
+	http.HandleFunc("/transaction", DoTransaction)
+	http.HandleFunc("/wallet", Showcoins)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	
