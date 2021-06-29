@@ -43,6 +43,7 @@ statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS SignUpRoll (id INTE
 	http.HandleFunc("/coins", AwardCoins)
 	http.HandleFunc("/transaction", DoTransaction)
 	http.HandleFunc("/wallet", Showcoins)
+	 http.HandleFunc("/history", History)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	
