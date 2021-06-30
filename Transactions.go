@@ -21,7 +21,7 @@ import (
 
 type Transaction struct{
 	RollNo string `json:"rollno"`
-	Coins string `json:"coins"`
+	Coins int `json:"coins"`
  }
 
  type Claims struct {
@@ -35,40 +35,7 @@ type Transaction struct{
 
 func DoTransaction(response http.ResponseWriter, request *http.Request){
 
-		cookie, err := request.Cookie("token")
-	if err != nil {
-		if err == http.ErrNoCookie {
-			response.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		response.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	tokenStr := cookie.Value
-
-	claims := &Claims{}
-
-	tkn, err := jwt.ParseWithClaims(tokenStr, claims,
-		func(t *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
-		})
-
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			response.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		response.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if !tkn.Valid {
-		response.WriteHeader(http.StatusUnauthorized)
-		return
-	}
-
-	response.Write([]byte(fmt.Sprintf("Hello, %s", claims.Username)))
+	Username := CheckjwtToken(response, request)
 
 
 		response.Header().Set("Content-Type","application/json")
@@ -80,7 +47,7 @@ func DoTransaction(response http.ResponseWriter, request *http.Request){
 		log.Fatal(err)
 	    }
 
-	      coins, _ := strconv.Atoi(transaction.Coins)
+	      coins := transaction.Coins
 
 
 		  ctx := context.Background()
@@ -92,15 +59,13 @@ func DoTransaction(response http.ResponseWriter, request *http.Request){
 
        var rollno1 string
 	    var rollno2 string
-	   var id1 string
-	   var id2 string
-	   var coins1 string
-	   var coins2 string
+	   var id1 int
+	   var id2 int
+	   var coins1 int
+	   var coins2 int
 
-	    var tcoins1 int
-	    var tcoins2 int
 
-	     row1, _ := tx.Query("SELECT id, rollno, coins FROM people")
+	     row1, _ := tx.Query("SELECT id, rollno, coins FROM userdata")
 
 		  for row1.Next() {
            err =  row1.Scan(&id1, &rollno1, &coins1) 
@@ -108,14 +73,14 @@ func DoTransaction(response http.ResponseWriter, request *http.Request){
 		    tx.Rollback()
 		    return
      	    }
-		 if claims.Username == rollno1 {
+		 if Username == rollno1 {
 			 fmt.Println(rollno1)
-			   tcoins1,_ = strconv.Atoi(coins1)
+			   coins1 = coins1
 			
 		 }
     }
 
-		 row2, _ := tx.Query("SELECT id, rollno, coins FROM people")
+		 row2, _ := tx.Query("SELECT id, rollno, coins FROM userdata")
 
 		   for row2.Next() {
         err =  row2.Scan(&id2, &rollno2, &coins2) 
@@ -126,29 +91,26 @@ func DoTransaction(response http.ResponseWriter, request *http.Request){
      	    }
 		 if transaction.RollNo == rollno2 {
 			 fmt. Println(rollno1)
-			   tcoins2,_ = strconv.Atoi(coins2)
+			   coins2 = coins2
 			
 		 }
     }
 
-	        // fmt.Println(coins1)
-			// fmt.Println(coins2)
+
 			tax := (coins*2)/100
 		
-		     tcoins1 = tcoins1-coins - tax
-		     tcoins2 = tcoins2+coins - tax
-			// fmt.Println(tcoins1)
-			// fmt.Println(tcoins2)
-
+		     coins1 = coins1-coins - tax
+		     coins2 = coins2+coins - tax
+			
 			
 
-			if tcoins1 < 0 {
-				 response.Write([]byte(fmt.Sprintf("%s does not have enough coins", claims.Username )))
+			if coins1 < 0 {
+				 response.Write([]byte(fmt.Sprintf("%s does not have enough coins", Username )))
 				  tx.Rollback()
 				return
 			} else {
 			// stmtupdate1, _ := database.Prepare("UPDATE people set coins=? WHERE rollno=?")
-			_,err = tx.ExecContext(ctx, "UPDATE people set coins=? WHERE rollno=?", strconv.Itoa(tcoins1), claims.Username)
+			_,err = tx.ExecContext(ctx, "UPDATE userdata set coins=? WHERE rollno=?", coins1, Username)
 			    if err != nil {
 		         tx.Rollback()
 		         return
@@ -156,7 +118,7 @@ func DoTransaction(response http.ResponseWriter, request *http.Request){
             // stmtupdate1.Exec(strconv.Itoa(tcoins1), transaction.RollNo1)
 
 			// stmtupdate2, _ := database.Prepare("update people set coins=? where rollno=?")
-			_,err = tx.ExecContext(ctx, "UPDATE people set coins=? WHERE rollno=?", strconv.Itoa(tcoins2), transaction.RollNo)
+			_,err = tx.ExecContext(ctx, "UPDATE userdata set coins=? WHERE rollno=?", coins2, transaction.RollNo)
 			      if err != nil {
 		         tx.Rollback()
 		         return
@@ -165,24 +127,24 @@ func DoTransaction(response http.ResponseWriter, request *http.Request){
 			}
 
 
-		updatedrow, _ := database.Query("SELECT id, rollno, coins FROM people")
+		updatedrow, _ := database.Query("SELECT id, rollno, coins FROM userdata")
 	
 	var id int
     var rollno string
-    var updatedcoins string
+    var updatedcoins int
 
 	   for updatedrow.Next() {
          updatedrow.Scan(&id, &rollno, &updatedcoins)
-	 	 fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + updatedcoins)
+	 	 fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + strconv.Itoa(updatedcoins))
 
 	 	}
 
 		 err = tx.Commit()
 		//  recordtime := time.Now();
 		fmt.Println(transaction.RollNo)
-			fmt.Println(claims.Username)
+			fmt.Println(Username)
 
-		  AddHistory(transaction.RollNo, claims.Username, transaction.Coins)
+		  AddHistory(Username, transaction.RollNo, transaction.Coins)
 
 
 		//  History()

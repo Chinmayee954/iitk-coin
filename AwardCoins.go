@@ -17,7 +17,7 @@ import (
 
 type Coins struct{
     RollNo string `json:"rollno"`
-    InsertedCoins string `json:"coins"`
+    InsertedCoins int `json:"coins"`
 }
 
 
@@ -31,52 +31,48 @@ func AwardCoins(response http.ResponseWriter, request *http.Request)  {
       
 	   database, _ := sql.Open("sqlite3", "./data.db")
 
-	      intialrow, _ := database.Query("SELECT id, rollno, coins FROM people")
-
+	   
 
 	   fmt.Println(coins.RollNo, coins.InsertedCoins)
-	  
 
-	     var initialid int
-    var initialrollno string
-    var initialcoins string
-	 var flag int
+	//    stmtupdate, _ := database.Prepare("UPDATE userdata set coins=? WHERE rollno = ?")
+    //       stmtupdate.Exec(100, coins.RollNo)
+		    
+	      intialrow, _ := database.Query("SELECT id, rollno, coins FROM userdata")
+
+	  var id int
+     var rollno string
+     var intialcoins int
+	 var flag = 0
 
 	   for intialrow.Next() {
-          intialrow.Scan(&initialid, &initialrollno, &initialcoins)
-		 if coins.RollNo == initialrollno {
+          intialrow.Scan(&id, &rollno, &intialcoins)
+		  fmt.Println(rollno)
+	  
+		 if coins.RollNo == rollno {
 			 
-			 flag = 1
-		    
-		//   return
+			 fmt.Println("found")
+             flag = 1
 		 }
 		}
 
-		if flag == 1 {
-			fmt.Println("found")
-               stmtupdate, _ := database.Prepare("UPDATE people set coins=? WHERE rollno = (?)")
+		if flag == 1{
+			  stmtupdate, _ := database.Prepare("UPDATE userdata set coins=? WHERE rollno = ?")
           stmtupdate.Exec(coins.InsertedCoins, coins.RollNo)
 		} else {
-			fmt.Println("notfound")
-                stmtinsert, _ := database.Prepare("INSERT INTO people (rollno, coins) VALUES (?, ?)")
-	             stmtinsert.Exec(coins.RollNo, coins.InsertedCoins)
+			response.Write([]byte(fmt.Sprintf("NO DATA AVAILABLE")))
+		}
+
+
+	     updatedrow, _ := database.Query("SELECT id, rollno, coins FROM userdata")
 	
-		} 
-
-	  
-       
-
-		
-
-	     updatedrow, _ := database.Query("SELECT id, rollno, coins FROM people")
-	
-	var id int
-    var rollno string
-    var updatedcoins string
+	var id1 int
+    var rollno1 string
+    var coins1 int
 
 	   for updatedrow.Next() {
-         updatedrow.Scan(&id, &rollno, &updatedcoins)
-	 	 fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + updatedcoins)
+         updatedrow.Scan(&id1, &rollno1, &coins1)
+	 	 fmt.Println(strconv.Itoa(id1) + ": " + rollno1 + " " + strconv.Itoa(coins1))
 
 	 	}
 

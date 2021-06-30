@@ -1,7 +1,10 @@
 package main
 
+
+
+
 import (
-	// "encoding/json"
+	//  "encoding/json"
 	 "fmt"
 	 "net/http"
 	  "time"
@@ -9,14 +12,27 @@ import (
 	//   "context"
 	//   "log"
 
-	// "github.com/dgrijalva/jwt-go"
+	//  "github.com/dgrijalva/jwt-go"
      _ "github.com/mattn/go-sqlite3"
 	 "database/sql"
 	//    "golang.org/x/crypto/bcrypt"
 )
 
 
+type historyRollNo struct{
+    HRollno string `json:"rollno"`
+}
+
+
 func History(response http.ResponseWriter, request *http.Request) {
+
+//    response.Header().Set("Content-Type","application/json")
+// 	  var historyrollno historyRollNo
+// 	  json.NewDecoder(request.Body).Decode(&historyrollno)
+
+
+Username := CheckjwtToken(response, request)
+
 	database , _ := sql.Open("sqlite3", "./history.db")
         row, _ := database.Query("SELECT id, rollno1, rollno2, coins, time FROM records")
      
@@ -26,16 +42,22 @@ func History(response http.ResponseWriter, request *http.Request) {
     var coins string
     var time string
 
+	fmt.Println(Username)
+	// fmt.Println()
+
 	   for row.Next() {
           row.Scan(&id, &rollno1,&rollno2, &coins, &time)
-		   fmt.Println(strconv.Itoa(id) + ": " + rollno1 + " " + rollno2 + " " + coins + " " + time)
+		   if(Username == rollno1){
+             fmt.Println(strconv.Itoa(id) + ": " + rollno1 + " " + rollno2 + " " + coins + " " + time)
+		   }
+		  
 		}
 }
 
 
-func AddHistory(rollno1 string, rollno2 string, coins string) {
+func AddHistory(rollno1 string, rollno2 string, coins int) {
 	database , _ := sql.Open("sqlite3", "./history.db")
-statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, rollno1 TEXT, rollno2 TEXT, coins TEXT, time TEXT)")
+statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS records (id INTEGER PRIMARY KEY, rollno1 TEXT, rollno2 TEXT, coins INTEGER, time TEXT)")
 statement.Exec()
 
 stmt, _ := database.Prepare("INSERT INTO records (rollno1, rollno2, coins, time) VALUES (?, ?, ?, ?)")

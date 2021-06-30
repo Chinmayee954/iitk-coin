@@ -16,15 +16,15 @@ import (
 )
 
 
-func CheckjwtToken(w http.ResponseWriter, r *http.Request){
+func CheckjwtToken(w http.ResponseWriter, r *http.Request) string{
 	cookie, err := r.Cookie("token")
 	if err != nil {
 		if err == http.ErrNoCookie {
 			w.WriteHeader(http.StatusUnauthorized)
-			return
+			return "false"
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		return
+		return "false"
 	}
 
 	tokenStr := cookie.Value
@@ -39,16 +39,18 @@ func CheckjwtToken(w http.ResponseWriter, r *http.Request){
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			w.WriteHeader(http.StatusUnauthorized)
-			return
+			return "false"
 		}
 		w.WriteHeader(http.StatusBadRequest)
-		return
+		return "false"
 	}
 
 	if !tkn.Valid {
 		w.WriteHeader(http.StatusUnauthorized)
-		return
+		return "false"
 	}
 
 	w.Write([]byte(fmt.Sprintf("Hello, %s", claims.Username)))
+	return claims.Username
+	
 }

@@ -41,36 +41,59 @@ func SignUp(response http.ResponseWriter, request *http.Request) {
 	  var user User
 	  json.NewDecoder(request.Body).Decode(&user)
 
-    database, _ := sql.Open("sqlite3", "./signup_rollno.db")
+    database, _ := sql.Open("sqlite3", "./data.db")
+    statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS userdata (id INTEGER PRIMARY KEY, rollno TEXT, password TEXT, coins INTEGER, rewards INTEGER)")
+    statement.Exec()
 
-	  user.Password = getHash([]byte(user.Password))
+	
+	//   statement1, _ := database.Prepare("INSERT INTO userdata (rollno, password) VALUES (?, ?)")
+	//     statement1.Exec("190100", "chin@1234")
 
-	    rows1, _ := database.Query("SELECT id, rollno, password FROM SignUpRoll")
-	    var id1 int
-    var rollno1 string
-    var password1 string
 
-	   for rows1.Next() {
-         rows1.Scan(&id1, &rollno1, &password1)
-		 if(user.Username == rollno1){
-			 fmt.Println("user already exists")
-			 return
-		 }
-    }
 
-	var signupuser string = user.Username
-	var signuppassword string = user.Password
+	user.Password = getHash([]byte(user.Password))
 
-	    statement, _ := database.Prepare("INSERT INTO SignUpRoll (rollno, password) VALUES (?, ?)")
-	    statement.Exec(signupuser, signuppassword)
-
-	    rows, _ := database.Query("SELECT id, rollno, password FROM SignUpRoll")
+	    rows, _ := database.Query("SELECT id, rollno, password FROM userdata")
 	    var id int
     var rollno string
     var password string
-    for rows.Next() {
-        rows.Scan(&id, &rollno, &password)
-        fmt.Println(strconv.Itoa(id) + ": " + rollno + " " + password)
+	var flag = 1
+
+	fmt.Println(user.Username)
+
+	
+
+	   for rows.Next() {
+         rows.Scan(&id, &rollno, &password)
+		 if user.Username == rollno {
+			
+			 flag = 0
+			 break; 
+		 }
+    }
+
+	if flag == 1 {
+            var signupuser string = user.Username
+	        var signuppassword string = user.Password
+
+	    statement, _ := database.Prepare("INSERT INTO userdata (rollno, password, coins, rewards) VALUES (?, ?, ?, ?)")
+	    statement.Exec(signupuser, signuppassword, 0, 0)
+	}
+
+	// } else {
+    //       fmt.Println("you are already logged in")
+	// }
+
+	
+	    rows1, _ := database.Query("SELECT id, rollno, password, coins, rewards FROM userdata")
+	    var id1 int
+    var rollno1 string
+    var password1 string
+	var coins1 int
+	var rewards1 int
+    for rows1.Next() {
+        rows1.Scan(&id1, &rollno1, &password1, &coins1, &rewards1)
+        fmt.Println(strconv.Itoa(id1) + ": " + rollno1 + " " + password1 + " " + strconv.Itoa(coins1) + " " + strconv.Itoa(rewards1))
     }
 
 	//   response.Write([]byte(fmt.Sprintf("congrats, %s", user.Username)))
@@ -84,7 +107,7 @@ func SignUp(response http.ResponseWriter, request *http.Request) {
 
 func Login(w http.ResponseWriter, r *http.Request) {
 	var credentials Credentials
-     database, _ := sql.Open("sqlite3", "./signup_rollno.db")
+     database, _ := sql.Open("sqlite3", "./data.db")
 	err := json.NewDecoder(r.Body).Decode(&credentials)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -92,7 +115,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	
-	    rows, _ := database.Query("SELECT id, rollno, password FROM SignUpRoll")
+	    rows, _ := database.Query("SELECT id, rollno, password FROM userdata")
 	    var id int
     var rollno string
     var password string
@@ -223,7 +246,7 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 	  json.NewDecoder(request.Body).Decode(&rollno)
 	   database, _ := sql.Open("sqlite3", "./data.db")
           
-         row, _ := database.Query("SELECT id, rollno, coins FROM people")
+         row, _ := database.Query("SELECT id, rollno, coins FROM userdata")
 
 	var requestedrollno string
     var coins string

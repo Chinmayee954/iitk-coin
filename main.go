@@ -4,7 +4,7 @@ package main
 import (
 	"log"
 	"net/http"
-	"database/sql"
+	// "database/sql"
 	 _ "github.com/mattn/go-sqlite3"
 	//  "fmt"
 	//  "strconv"
@@ -12,14 +12,12 @@ import (
 
 func main() {
 
-database, _ := sql.Open("sqlite3", "./signup_rollno.db")
-statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS SignUpRoll (id INTEGER PRIMARY KEY, rollno TEXT, password TEXT)")
- statement.Exec()
+// database, _ := sql.Open("sqlite3", "./signup_rollno.db")
+// statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS SignUpRoll (id INTEGER PRIMARY KEY, rollno TEXT, password TEXT)")
+//  statement.Exec()
 
 
-    database1, _ := sql.Open("sqlite3", "./data.db")
-    statement1, _ := database1.Prepare("CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY, rollno TEXT, coins TEXT)")
-    statement1.Exec()
+   
 
 	//   statement1, _ = database1.Prepare("DELETE FROM people WHERE id=?")
 	// //   delete from userinfo where uid=?
@@ -43,7 +41,8 @@ statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS SignUpRoll (id INTE
 	http.HandleFunc("/coins", AwardCoins)
 	http.HandleFunc("/transaction", DoTransaction)
 	http.HandleFunc("/wallet", Showcoins)
-	 http.HandleFunc("/history", History)
+	http.HandleFunc("/history", History)
+	http.HandleFunc("/makeadmin", MakeAdmin)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	
