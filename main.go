@@ -38,12 +38,21 @@ func main() {
 	http.HandleFunc("/secretpage", Home)
 	http.HandleFunc("/refresh", Refresh)
 	http.HandleFunc("/signup", SignUp)
-	http.HandleFunc("/coins", AwardCoins)
 	http.HandleFunc("/transaction", DoTransaction)
 	http.HandleFunc("/wallet", Showcoins)
 	http.HandleFunc("/history", History)
-	http.HandleFunc("/makeadmin", MakeAdmin)
+	http.HandleFunc("/redeem", Redeem)
+	http.HandleFunc("/admin", Admin)
+	http.HandleFunc("/admin/awardcoins", AwardCoins)
+	http.HandleFunc("/admin/makeadmin", MakeAdmin)
+	http.HandleFunc("/admin/deleteuser", DeleteUser)
+	http.HandleFunc("/admin/deleteadmin", DeleteAdmin)
+	http.HandleFunc("/admin/giverewards", GiveRewards)
+	http.HandleFunc("/admin/additems", AddStoreItem)
+	http.HandleFunc("/firstadmin", MakeAdmin)
+	http.HandleFunc("/admin/approve_redeem", ApproveRedeem)
 	log.Fatal(http.ListenAndServe(":8080", nil))
+
 
 	
 }
